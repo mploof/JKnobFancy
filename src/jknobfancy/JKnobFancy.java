@@ -20,7 +20,18 @@ import java.util.ArrayList;
 
 @SuppressWarnings("serial")
 public class JKnobFancy extends JComponent{
+	
+	//~~~~~~~~ Knob Value Vars ~~~~~~~~//
+	/**
+	 * Minimum value the knob can report
+	 */
+	int minVal;
+	/**
+	 * Maximum value the knob can report
+	 */
+	int maxVal;
 
+	//~~~~~~~~ Background Image Vars ~~~~~~~~//
 	/**
 	 * Dimension of the knob's background image
 	 */
@@ -35,6 +46,7 @@ public class JKnobFancy extends JComponent{
 	 */
 	float scale;
 	
+	//~~~~~~~~ Handle and Track Vars ~~~~~~~~//
 	/**
 	 * Relative radius as a percent (0.0-1.0) of the overall width of the background image
 	 */
@@ -58,6 +70,7 @@ public class JKnobFancy extends JComponent{
 	 */
 	protected List<JKnobHandle> handles = new ArrayList<JKnobHandle>();
 			
+	//~~~~~~~~ Handle Class~~~~~~~~//
 	/**
 	 * This class describes handle objects that may be positioned 
 	 * on the JKnobFancy object. 
@@ -142,7 +155,6 @@ public class JKnobFancy extends JComponent{
 			double ret = Math.toDegrees(tempTheta);			
 			return ret;
 		}
-
 		
 		 /**
 		  * Determine if the mouse click was on the spot or
@@ -202,8 +214,17 @@ public class JKnobFancy extends JComponent{
 		public int getRadius() {
 			return radius;
 		}		
+	
+		/**
+		 * @return The handle value scaled based upon the knob's min and max values
+		 */
+		public int getVal(){
+			final int DEG_PER_ROT = 360;
+			return (int) Math.round(getAngleDeg() / DEG_PER_ROT * thisKnob.getRange()) + thisKnob.minVal;
+		}
 	}
 	
+	//~~~~~~~~ Constructors and Initialization ~~~~~~~~//
 	 /**
 	  * No initial location constructor that initializes the position
 	  * of the knob to 0 degrees (right).
@@ -327,6 +348,7 @@ public class JKnobFancy extends JComponent{
 		});
 	 }
 	 
+	 //~~~~~~~~ Public Methods ~~~~~~~~//
 	 /**
 	  * Sets the knob background image width. The background image is always scaled with
 	  * width / height proportionality, so this will cause the the width of the image
@@ -440,4 +462,25 @@ public class JKnobFancy extends JComponent{
 	 public Dimension getMinimumSize() {
 		 return new Dimension(backgroundIcon.getIconWidth(), backgroundIcon.getIconHeight());
 	 }
+
+	
+	
+	public int getMinVal() {
+		 return minVal;
+	}
+
+	public void setMinVal(int minVal) {
+		this.minVal = minVal;
+	}
+
+	public int getMaxVal() {
+		return maxVal;
+	}
+
+	public void setMaxVal(int maxVal) {
+		this.maxVal = maxVal;
+	}	
+	public int getRange(){
+		return maxVal - minVal;
+	}
 }
