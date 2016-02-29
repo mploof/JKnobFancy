@@ -1,4 +1,4 @@
-package jknob;
+package jknobfancy;
 
 import java.awt.BasicStroke;
 import java.awt.Color;

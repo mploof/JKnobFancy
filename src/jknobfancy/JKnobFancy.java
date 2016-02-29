@@ -1,4 +1,4 @@
-package jknob;
+package jknobfancy;
 
 //Imports for the GUI classes.
 import java.awt.*;

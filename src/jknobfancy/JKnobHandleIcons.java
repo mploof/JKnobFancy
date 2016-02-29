@@ -1,4 +1,4 @@
-package jknob;
+package jknobfancy;
 
 import javax.swing.ImageIcon;
 
