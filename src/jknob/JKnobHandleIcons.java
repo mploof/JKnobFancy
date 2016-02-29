@@ -15,18 +15,22 @@ public class JKnobHandleIcons {
 		private static String largeBlueDot = "25px-Blue_pog.png";
 		
 		public static ImageIcon smallGreenDot(){
-			return new ImageIcon(JKnobHandleIcons.class.getResource(smallGreenDot));
+			return getImageIcon(smallGreenDot);
 		}
 		
 		public static ImageIcon smallBlueDot(){
-			return new ImageIcon(JKnobHandleIcons.class.getResource(smallBlueDot));
+			return getImageIcon(smallBlueDot);
 		}
 		
 		public static ImageIcon medBlueDot(){
-			return new ImageIcon(JKnobHandleIcons.class.getResource(medBlueDot));
+			return getImageIcon(medBlueDot);
 		}
 		
 		public static ImageIcon largeBlueDot(){
-			return new ImageIcon(JKnobHandleIcons.class.getResource(largeBlueDot));
+			return getImageIcon(largeBlueDot);
 		}	
+		
+		public static ImageIcon getImageIcon(String fileName){
+			return new ImageIcon(new JKnobHandleIcons().getClass().getClassLoader().getResource("images/" + fileName));
+		}
 }
