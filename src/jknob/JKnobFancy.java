@@ -24,7 +24,7 @@ public class JKnobFancy extends JComponent{
 	/**
 	 * Dimension of the knob's background image
 	 */
-	Dimension backgroundSize;
+	Dimension backgroundSize = new Dimension();
 	/**
 	 * Icon used for the knob background
 	 */
@@ -238,94 +238,93 @@ public class JKnobFancy extends JComponent{
 	  * See notes for {@link #JKnobFancy(double, Point2D, float, ImageIcon, int, ImageIcon)}
 	  */	  
 	 public void init(double initDeg, Point2D relCenter, float relTrackRadius, ImageIcon backgroundIcon, int backgroundWidth, ImageIcon handleIcon){
-		 
-		 this.defaultHandleIcon = handleIcon;
-		 this.setWidth(backgroundWidth);		 
-		 handles.add(new JKnobHandle(Math.toRadians(initDeg), this.defaultHandleIcon, this));		
+		 		 
+		this.defaultHandleIcon = handleIcon;			
+		this.backgroundIcon = backgroundIcon;		
+		this.setWidth(backgroundWidth);		 
+		this.center = new Point((int)(relCenter.getX() * backgroundIcon.getIconWidth() * scale), (int)(relCenter.getY() * backgroundIcon.getIconHeight() * scale));
+		this.relTrackRadius = relTrackRadius;
+		this.setTrackRadius();
+		
+		handles.add(new JKnobHandle(Math.toRadians(initDeg), this.defaultHandleIcon, this));
+		
+		addMouseListener(new MouseAdapter() {
+			 /**
+			  * When the mouse button is pressed, the dragging of the
+			  * spot will be enabled if the button was pressed over
+			  * the spot.
+			  *
+			  * @param e reference to a MouseEvent object describing
+			  *          the mouse press.
+			  */
+			 @Override
+			 public void mousePressed(MouseEvent e) {
 			
-			this.backgroundIcon = backgroundIcon;		
-			
-			this.center = new Point((int)(relCenter.getX() * backgroundIcon.getIconWidth() * scale), (int)(relCenter.getY() * backgroundIcon.getIconHeight() * scale));
-			this.relTrackRadius = relTrackRadius;
-			this.setTrackRadius();			
-			
-			addMouseListener(new MouseAdapter() {
-				 /**
-				  * When the mouse button is pressed, the dragging of the
-				  * spot will be enabled if the button was pressed over
-				  * the spot.
-				  *
-				  * @param e reference to a MouseEvent object describing
-				  *          the mouse press.
-				  */
-				 @Override
-				 public void mousePressed(MouseEvent e) {
-				
-					Point mouseLoc = e.getPoint();
-					boolean alreadySelected = false;
-					for(JKnobHandle thisHandle : handles){
-						// This prevents multiple spots from being simultaneously selected
-						if(alreadySelected){
-							thisHandle.pressedOnSpot = false;
-						}
-						else{
-							thisHandle.pressedOnSpot = thisHandle.isOnSpot(mouseLoc);
-						}
-						if(thisHandle.pressedOnSpot){
-							alreadySelected = true;
-						}
-					}		
-				 }
-				
-				 /**
-				  * When the button is released, the dragging of the spot
-				  * is disabled.
-				  *
-				  * @param e reference to a MouseEvent object describing
-				  *          the mouse release.
-				  */
-				 @Override
-				 public void mouseReleased(MouseEvent e) {
-					for(JKnobHandle thisHandle : handles){
+				Point mouseLoc = e.getPoint();
+				boolean alreadySelected = false;
+				for(JKnobHandle thisHandle : handles){
+					// This prevents multiple spots from being simultaneously selected
+					if(alreadySelected){
 						thisHandle.pressedOnSpot = false;
-					}		
-				 }
-			});
-			addMouseMotionListener(new MouseMotionAdapter() {
-				 /**
-				  * Compute the new angle for the spot and repaint the 
-				  * knob.  The new angle is computed based on the new
-				  * mouse position.
-				  *
-				  * @param e reference to a MouseEvent object describing
-				  *          the mouse drag.
-				  */
-				 @Override
-				 public void mouseDragged(MouseEvent e) {
-					 
-					for(JKnobHandle thisHandle : handles){
-						if (thisHandle.pressedOnSpot) {
-							
-						    int mx = e.getX();
-						    int my = e.getY();
-					
-						    // Compute the x, y position of the mouse RELATIVE
-						    // to the center of the knob.
-						    int mxp = mx - center.x;
-						    int myp = center.y - my;
-					
-						    // Compute the new angle of the knob from the
-						    // new x and y position of the mouse.  
-						    // Math.atan2(...) computes the angle at which
-						    // x,y lies from the positive y axis with cw rotations
-						    // being positive and ccw being negative.
-						    thisHandle.setAngle(Math.atan2(myp, mxp));
-					
-						    repaint();
-						}
 					}
-				 }
-			});
+					else{
+						thisHandle.pressedOnSpot = thisHandle.isOnSpot(mouseLoc);
+					}
+					if(thisHandle.pressedOnSpot){
+						alreadySelected = true;
+					}
+				}		
+			 }
+			
+			 /**
+			  * When the button is released, the dragging of the spot
+			  * is disabled.
+			  *
+			  * @param e reference to a MouseEvent object describing
+			  *          the mouse release.
+			  */
+			 @Override
+			 public void mouseReleased(MouseEvent e) {
+				for(JKnobHandle thisHandle : handles){
+					thisHandle.pressedOnSpot = false;
+				}		
+			 }
+		});
+		addMouseMotionListener(new MouseMotionAdapter() {
+			 /**
+			  * Compute the new angle for the spot and repaint the 
+			  * knob.  The new angle is computed based on the new
+			  * mouse position.
+			  *
+			  * @param e reference to a MouseEvent object describing
+			  *          the mouse drag.
+			  */
+			 @Override
+			 public void mouseDragged(MouseEvent e) {
+				 
+				for(JKnobHandle thisHandle : handles){
+					if (thisHandle.pressedOnSpot) {
+						
+					    int mx = e.getX();
+					    int my = e.getY();
+				
+					    // Compute the x, y position of the mouse RELATIVE
+					    // to the center of the knob.
+					    int mxp = mx - center.x;
+					    int myp = center.y - my;
+				
+					    // Compute the new angle of the knob from the
+					    // new x and y position of the mouse.  
+					    // Math.atan2(...) computes the angle at which
+					    // x,y lies from the positive y axis with cw rotations
+					    // being positive and ccw being negative.
+					    thisHandle.setAngle(Math.atan2(myp, mxp));
+				
+					    repaint();
+					}
+				}
+			 }
+		});
 	 }
 	 
 	 /**
@@ -337,7 +336,7 @@ public class JKnobFancy extends JComponent{
 	 public void setWidth(int backgroundWidth){		
 		this.scale = (float) backgroundWidth / (float) backgroundIcon.getIconWidth();
 		int height = (int)(backgroundIcon.getIconHeight() * this.scale);
-		backgroundSize.setSize(backgroundWidth, height);
+		this.backgroundSize.setSize(backgroundWidth, height);
 		repaint();
 	 }
 	 
