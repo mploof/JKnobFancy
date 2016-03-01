@@ -31,6 +31,7 @@ public class JKnobHandleIcons {
 		}	
 		
 		public static ImageIcon getImageIcon(String fileName){
-			return new ImageIcon(new JKnobHandleIcons().getClass().getClassLoader().getResource("images/" + fileName));
+			return new ImageIcon(new JKnobHandleIcons().getClass().getClassLoader().
+					getResource("resources/" + fileName));
 		}
 }
