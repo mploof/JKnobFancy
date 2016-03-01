@@ -131,7 +131,7 @@ public class JKnobFancy extends JComponent{
 		 */
 		private boolean pressedOnSpot;	
 				
-		JKnobHandle(double theta, ImageIcon icon, JKnobFancy thisKnob){
+		private JKnobHandle(double theta, ImageIcon icon, JKnobFancy thisKnob){
 			init(theta, icon, thisKnob);
 		}
 		
