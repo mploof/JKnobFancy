@@ -367,7 +367,9 @@ public class JKnobFancy extends JComponent{
 			 ImageIcon handleIcon){
 		
 		this.setMinPos(0);
-		this.setMaxPos(0);		 
+		this.setMaxPos(0);
+		this.setMinVal(0);
+		this.setMaxVal(0);
 		this.defaultHandleIcon = handleIcon;			
 		this.backgroundIcon = backgroundIcon;		
 		this.setWidth(backgroundWidth);		 
