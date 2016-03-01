@@ -10,16 +10,34 @@ import java.util.ArrayList;
 
 /**
 * JFancyKnob.java - 
-*   A knob component. The knob can be rotated by dragging 
-*   a spot on the knob around in a circle. The positions
-*   of the handles may reported in degrees or radians by
-*   getting a handle and calling the appropriate method.
+*   A knob component. The knob can be rotated by dragging a 
+*   spot on the knob around in a circle. The positions of 
+*   the handles may reported in degrees or radians by getting 
+*   a handle and calling the appropriate method.
+*   <br><br>
+*   Setting the max and min position values of the knob
+*   limits motion of handles to the range of positions
+*   between those two values. Setting the knob directionality
+*   determines which arc bounded by those two values is valid
+*   for handle movement. For instance, if a min position of 180
+*   degrees and max position of 0 degrees is set, setting the
+*   knob directionality to CW means the handles can move in the
+*   top half of the circular track. Setting the directionality
+*   to CCW (i.e. setting CW movement false) means the handles
+*   can move in the lower half of the circular track. <b>Be
+*   careful when switching the directionality</b>, since handles
+*   located in an invalid region will no longer be able to be
+*   moved.
 *
 * @author Michael ploof
 */
 
-@SuppressWarnings("serial")
+
 public class JKnobFancy extends JComponent{
+
+	private static final long serialVersionUID = -3331634859451614041L;
+
+	private static final double DEG_PER_ROT = 360;
 	
 	//~~~~~~~~ Knob Value Vars ~~~~~~~~//
 	/**
@@ -30,6 +48,20 @@ public class JKnobFancy extends JComponent{
 	 * Maximum value the knob can report
 	 */
 	int maxVal;
+	/**
+	 * The angular position in degrees at which the knob's minimum value occurs
+	 */
+	double minValPos;
+	/**
+	 * The angular position in degrees at which the knob's maximum value occurs
+	 */
+	double maxValPos;
+	/**
+	 * If true, the value of a knob handle will increase as it moves clockwise
+	 * from the minValPos, otherwise it will increase as it moves counterclockwise
+	 */
+	boolean cwDirection;
+	
 
 	//~~~~~~~~ Background Image Vars ~~~~~~~~//
 	/**
@@ -48,7 +80,8 @@ public class JKnobFancy extends JComponent{
 	
 	//~~~~~~~~ Handle and Track Vars ~~~~~~~~//
 	/**
-	 * Relative radius as a percent (0.0-1.0) of the overall width of the background image
+	 * Relative radius as a percent (0.0-1.0) of the overall width of the 
+	 * background image
 	 */
 	protected double relTrackRadius;
 	/**
@@ -114,27 +147,44 @@ public class JKnobFancy extends JComponent{
 			return icon;
 		}
 
+		/**
+		 * @param icon the icon to be painted for the handle
+		 */
 		public void setIcon(ImageIcon icon) {
 			this.icon = icon;
 		}
 
+		/**
+		 * @return whether the handle is currently clocked
+		 */
 		public boolean isPressedOnSpot() {
 			return pressedOnSpot;
 		}
 
-		public void setPressedOnSpot(boolean pressedOnSpot) {
+		/**
+		 * @param pressedOnSpot
+		 */
+		private void setPressedOnSpot(boolean pressedOnSpot) {
 			this.pressedOnSpot = pressedOnSpot;
 		}
 		
 		/**
-		 * @param theta the new handle angular position in radians
+		 * @param theta the new handle angular position in radians. Use
+		 * negative values for positions more than Pi radians from 0.
 		 */
 		public void setAngle(double theta) {
-			this.theta = theta;
+			// Only set the new angle if it's within the valid positional range
+			double deg = Math.toDegrees(theta);
+			deg = deg < 0 ? deg + DEG_PER_ROT : deg;
+			if(isInValidRange(deg))
+				this.theta = theta;
 		}
 		
 		/**
-		* @return the current angular position of the handle in radians
+		* @return the current angular position of the handle in radians.
+		* Values more than Pi radians from 0 are reported as a negative
+		* values relative to 0 (i.e. 3/2 Pi radians would be reported as
+		* -1/2 Pi radians). 
 		*/
 		public double getAngle() {
 			return theta;
@@ -144,16 +194,39 @@ public class JKnobFancy extends JComponent{
 		 * @param deg the new handle angular position in degrees
 		 */
 		public void setAngleDeg(double deg) {
-			this.theta = Math.toRadians(deg);
+			this.setAngle(Math.toRadians(deg));
 		}
 		
 		/**
-		* @return the current angular position of the handle in degrees
+		* @return the current angular position of the handle in degrees.
+		* Reported as values from 0-360 degrees (i.e. no negative values).
 		*/
 		public double getAngleDeg(){
 			double tempTheta = theta >= 0 ? theta : 2 * Math.PI + theta; 
 			double ret = Math.toDegrees(tempTheta);			
 			return ret;
+		}
+		
+		/**
+		 * @return whether the 
+		 */
+		private boolean isInValidRange(double newDeg){
+			if(thisKnob.getMinPos() == thisKnob.getMaxPos())
+				return true;
+			
+			double maxTemp = thisKnob.getMaxPos() - thisKnob.getMinPos();
+			maxTemp = maxTemp < 0 ? maxTemp + DEG_PER_ROT : maxTemp;
+			double handleTemp = newDeg - thisKnob.getMinPos();
+			handleTemp = handleTemp < 0 ? handleTemp + DEG_PER_ROT : handleTemp;
+			
+			System.out.println("New deg: " + newDeg + " max: " + thisKnob.getMaxPos() + " min: " + thisKnob.getMinPos());
+			System.out.println("New deg temp: " + handleTemp + " max temp: " + maxTemp + " min temp: 0" + " CW: " + thisKnob.isCwDirection());
+			System.out.println("");
+			
+			if((thisKnob.isCwDirection() && handleTemp >= maxTemp) || (!thisKnob.isCwDirection() && handleTemp <= maxTemp))
+				return true;
+			else
+				return false;			
 		}
 		
 		 /**
@@ -193,12 +266,13 @@ public class JKnobFancy extends JComponent{
 		 }
 		 
 		 /**
-		  * Calculate the x, y coordinates of the point on the edge of the handle's
-		  * radius that is closes to the center of rotation. This is useful if drawing
-		  * a line from the center of the handle's track to the edge of the handle icon.
-		  * 
-		  * @return a Point containing the x,y position of the point on the handle
-		  * 	closest to the center of ration
+		  * Calculate the x, y coordinates of the point on the edge of the
+		  * handle's radius that is closes to the center of rotation. This is 
+		  * useful if drawing a line from the center of the handle's track to 
+		  * the edge of the handle icon.
+		  *
+		  * @return a Point containing the x,y position of the point on the 
+		  * 	handle closest to the center of ration
 		  */
 		 protected Point getCenterEdgePoint(){
 			 double tempTheta = this.getAngle();
@@ -216,56 +290,91 @@ public class JKnobFancy extends JComponent{
 		}		
 	
 		/**
-		 * @return The handle value scaled based upon the knob's min and max values
+		 * @return The handle value scaled based upon the knob's min and max 
+		 * 		values
 		 */
-		public int getVal(){
-			final int DEG_PER_ROT = 360;
-			return (int) Math.round(getAngleDeg() / DEG_PER_ROT * thisKnob.getRange()) + thisKnob.minVal;
+		public int getVal(){	
+			
+			double maxTemp = thisKnob.getMaxPos() - thisKnob.getMinPos();
+			maxTemp = maxTemp < 0 ? maxTemp + DEG_PER_ROT : maxTemp;
+			double handleTemp = this.getAngleDeg() - thisKnob.getMinPos();
+			handleTemp = handleTemp < 0 ? handleTemp + DEG_PER_ROT : handleTemp;
+			
+			double pct = 0;
+			double range = thisKnob.getValPosRangeDeg();
+			if(thisKnob.isCwDirection())
+				pct = 1 - ((handleTemp - maxTemp) / range);
+			else{
+				pct = 1 - ((handleTemp - maxTemp) / range) * -1;
+				pct = thisKnob.getMaxPos() == thisKnob.getMinPos() ? pct - 1 : pct;
+			}
+			
+			return (int) Math.round(pct * thisKnob.getValRange());
 		}
 	}
 	
 	//~~~~~~~~ Constructors and Initialization ~~~~~~~~//
-	 /**
-	  * No initial location constructor that initializes the position
-	  * of the knob to 0 degrees (right).
-	  */
-	public JKnobFancy(Point2D relCenter, float relTrackRadius, ImageIcon backgroundIcon, int backgroundWidth, ImageIcon handleIcon) {
-		this(0, relCenter, relTrackRadius, backgroundIcon, backgroundWidth, handleIcon);
-	 }
-	 
-	 /*** 
-	  * @param initDeg the initial angle of the pre-populated first handle
+	/**
+	 * No initial location constructor that initializes the position
+	 * of the knob to 0 degrees (right).
+	 * 
 	  * @param relCenter the center point around which the handles will rotate as fractional values relative to the overall size of the background image.
 	  * 	<br><br>For instance, if the original background image is 100px W x 400 px H and the center of rotation should be at 50px, 100px, this parameter
 	  * 	would be "new Point(0.5, 0,25)". The point of locating the center of rotation in this manner is to ensure that the center of rotation is always
-	  * 	in the same place on the background image regardless of how it is scaled based upon the backgroundWidth parameter.<br><br>
+	  * 	in the same place on the background image regardless of how it is scaled based upon the backgroundWidth parameter.<br>
 	  * @param relTrackRadius the relative radius as a percent (0.0-1.0) of the overall width of the background image
 	  * @param backgroundIcon the IconImage for the background
 	  * @param backgroundWidth the width of the background. The background image will be scaled proportionally to fit this value
 	  * @param handleIcon the default IconImage for the handles
+	 */
+	public JKnobFancy(Point2D relCenter, double relTrackRadius, 
+			ImageIcon backgroundIcon, int backgroundWidth, 
+			ImageIcon handleIcon) {
+		this(0, relCenter, relTrackRadius, backgroundIcon, backgroundWidth, 
+				handleIcon);
+	 }
+	 
+	 /** 
+	  * Constructor to set initial handle position, relative track center and size, background
+	  * ImageIcon, background width (height is scaled proportionally to maintain background image
+	  * aspect ratio), and the initial handle IconImage.  
+	  * @param initDeg the initial angle of the pre-populated first handle <br>
+	  * See {@link #JKnobFancy(Point2D, double, ImageIcon, int, ImageIcon)} for other parameters
 	  */	  
-	 public JKnobFancy(double initDeg, Point2D relCenter, float relTrackRadius, ImageIcon backgroundIcon, int backgroundWidth, ImageIcon handleIcon) {
-		 init(initDeg, relCenter, relTrackRadius, backgroundIcon, backgroundWidth, handleIcon);	 
+	 public JKnobFancy(double initDeg, Point2D relCenter, double relTrackRadius,
+			 ImageIcon backgroundIcon, int backgroundWidth, 
+			 ImageIcon handleIcon) {
+		 init(initDeg, relCenter, relTrackRadius, backgroundIcon, 
+				 backgroundWidth, handleIcon);	 
 	 }
 	 
 	 /**
-	  * Empty public constructor available so the object may be instantiated before being properly initialized
+	  * Empty public constructor available so the object may be instantiated
+	  * before being fully initialized.
 	  */
 	 public JKnobFancy(){
 		 
 	 }
 	 
 	 /**
-	  * See notes for {@link #JKnobFancy(double, Point2D, float, ImageIcon, int, ImageIcon)}
-	  */	  
-	 public void init(double initDeg, Point2D relCenter, float relTrackRadius, ImageIcon backgroundIcon, int backgroundWidth, ImageIcon handleIcon){
-		 		 
+	  * This method is called from the constructors or explicitly after creation of
+	  * a JKnobFancy object using the empty no-args constructor to finish initialization. <br>
+	  * See notes for {@link #JKnobFancy(double, Point2D, double, ImageIcon, int, ImageIcon)}
+	  * for parameter details. 
+	  */
+	 public void init(double initDeg, Point2D relCenter, double relTrackRadius, 
+			 ImageIcon backgroundIcon, int backgroundWidth, 
+			 ImageIcon handleIcon){
+		
+		this.setMinPos(0);
+		this.setMaxPos(0);		 
 		this.defaultHandleIcon = handleIcon;			
 		this.backgroundIcon = backgroundIcon;		
 		this.setWidth(backgroundWidth);		 
-		this.center = new Point((int)(relCenter.getX() * backgroundIcon.getIconWidth() * scale), (int)(relCenter.getY() * backgroundIcon.getIconHeight() * scale));
-		this.relTrackRadius = relTrackRadius;
-		this.setTrackRadius();
+		this.center = new Point((int)(relCenter.getX() * backgroundIcon.getIconWidth() * scale), 
+				(int)(relCenter.getY() * backgroundIcon.getIconHeight() * scale));		
+		this.setRelTrackRadius(relTrackRadius);
+		
 		
 		handles.add(new JKnobHandle(Math.toRadians(initDeg), this.defaultHandleIcon, this));
 		
@@ -286,12 +395,12 @@ public class JKnobFancy extends JComponent{
 				for(JKnobHandle thisHandle : handles){
 					// This prevents multiple spots from being simultaneously selected
 					if(alreadySelected){
-						thisHandle.pressedOnSpot = false;
+						thisHandle.setPressedOnSpot(false);
 					}
 					else{
-						thisHandle.pressedOnSpot = thisHandle.isOnSpot(mouseLoc);
+						thisHandle.setPressedOnSpot(thisHandle.isOnSpot(mouseLoc));
 					}
-					if(thisHandle.pressedOnSpot){
+					if(thisHandle.isPressedOnSpot()){
 						alreadySelected = true;
 					}
 				}		
@@ -307,7 +416,7 @@ public class JKnobFancy extends JComponent{
 			 @Override
 			 public void mouseReleased(MouseEvent e) {
 				for(JKnobHandle thisHandle : handles){
-					thisHandle.pressedOnSpot = false;
+					thisHandle.setPressedOnSpot(false);
 				}		
 			 }
 		});
@@ -322,30 +431,39 @@ public class JKnobFancy extends JComponent{
 			  */
 			 @Override
 			 public void mouseDragged(MouseEvent e) {
-				 
-				for(JKnobHandle thisHandle : handles){
-					if (thisHandle.pressedOnSpot) {
-						
-					    int mx = e.getX();
-					    int my = e.getY();
-				
-					    // Compute the x, y position of the mouse RELATIVE
-					    // to the center of the knob.
-					    int mxp = mx - center.x;
-					    int myp = center.y - my;
-				
-					    // Compute the new angle of the knob from the
-					    // new x and y position of the mouse.  
-					    // Math.atan2(...) computes the angle at which
-					    // x,y lies from the positive y axis with cw rotations
-					    // being positive and ccw being negative.
-					    thisHandle.setAngle(Math.atan2(myp, mxp));
-				
-					    repaint();
-					}
-				}
+				 moveHandles(e);				
 			 }
 		});
+	 }
+	 
+	 /**
+	  * If the mouseDragged MouseMotionListener event is overridden,
+	  * include this method in the new listener to ensure that the
+	  * handles still move when dragged. 
+	  * @param e MouseEvent
+	  */
+	 public void moveHandles(MouseEvent e){
+		 for(JKnobHandle thisHandle : handles){
+			if (thisHandle.isPressedOnSpot()) {
+				
+			    int mx = e.getX();
+			    int my = e.getY();
+		
+			    // Compute the x, y position of the mouse RELATIVE
+			    // to the center of the knob.
+			    int mxp = mx - center.x;
+			    int myp = center.y - my;
+		
+			    // Compute the new angle of the knob from the
+			    // new x and y position of the mouse.  
+			    // Math.atan2(...) computes the angle at which
+			    // x,y lies from the positive y axis with cw rotations
+			    // being positive and ccw being negative.
+			    thisHandle.setAngle(Math.atan2(myp, mxp));
+		
+			    repaint();
+			}
+		}
 	 }
 	 
 	 //~~~~~~~~ Public Methods ~~~~~~~~//
@@ -366,7 +484,7 @@ public class JKnobFancy extends JComponent{
 	  * Sets the knob background image height. The background image is always scaled with
 	  * width / height proportionality, so this will cause the the width of the image
 	  * to change to accommodate the requested height.
-	  * @param backgroundHeight
+	  * @param backgroundHeight background image height in pixels
 	  */
 	 public void setHeight(int backgroundHeight){		 
 		 this.scale = (float) backgroundHeight / (float) backgroundIcon.getIconHeight();
@@ -383,9 +501,11 @@ public class JKnobFancy extends JComponent{
 	 }
 	 
 	 /**
-	  * @param relTrackRadius relative radius as a percent (0.0-1.0) of the overall width of the background image
+	  * @param relTrackRadius relative radius as a percent (0.0-1.0) of the overall width of the
+	  * 	background image
 	  */
-	 public void setTrackRadius(){
+	 public void setRelTrackRadius(double relTrackRadius){
+		 this.relTrackRadius = relTrackRadius;
 		 this.trackRadius = (int)(this.relTrackRadius * backgroundSize.getWidth());
 	 }
 	 
@@ -462,25 +582,99 @@ public class JKnobFancy extends JComponent{
 	 public Dimension getMinimumSize() {
 		 return new Dimension(backgroundIcon.getIconWidth(), backgroundIcon.getIconHeight());
 	 }
-
 	
-	
+	/**
+	 * @return the minimum value a knob handle may have 
+	 * 		(note: this is different than angular position)
+	 */
 	public int getMinVal() {
 		 return minVal;
 	}
-
+	/**
+	 * @param minVal the minimum value a knob handle may have
+	 * 		(note: this is different than angular position)
+	 */
 	public void setMinVal(int minVal) {
 		this.minVal = minVal;
 	}
-
+	/**
+	 * @return maxVal the maximum value a knob handle may have
+	 * 		(note: this is different than angular position)
+	 */
 	public int getMaxVal() {
 		return maxVal;
 	}
-
+	/**
+	 * @param maxVal the maximum value a knob handle may have
+	 * 		(note: this is different than angular position)
+	 */
 	public void setMaxVal(int maxVal) {
 		this.maxVal = maxVal;
 	}	
-	public int getRange(){
+	/**
+	 * @return the size of the knob's value range (i.e. maxVal - minVal)
+	 */
+	public int getValRange(){
 		return maxVal - minVal;
+	}
+	/**
+	 * @return the angular position in degrees at which the knob's minimum value occurs
+	 */
+	public double getMinPos(){
+		return minValPos;
+	}
+	/**
+	 * @param minPosDeg the angular position in degrees at which the knob's minimum value occurs
+	 */
+	public void setMinPos(double minPosDeg){
+		this.minValPos = minPosDeg;
+	}
+	/**
+	 * @return the angular position in degrees at which the knob's maximum value occurs
+	 */
+	public double getMaxPos(){
+		return maxValPos;
+	}
+	/**
+	 * @param maxPosDeg the angular position in degrees at which the knob's maximum value occurs
+	 */
+	public void setMaxPos(double maxPosDeg){
+		this.maxValPos = maxPosDeg;
+	}
+	/**
+	 * Gets the range between max and min value positions in degrees. This is dependent upon the
+	 * knob's directionality--i.e. if direction is CW, range is minValPos - maxValPos, otherwise
+	 * it is maxValPos - minValPos.
+	 * @return range in degrees
+	 */
+	public double getValPosRangeDeg(){
+		if(minValPos == maxValPos)
+			return DEG_PER_ROT;
+		double ret;
+		if(this.isCwDirection())
+			ret = minValPos - maxValPos;
+		else
+			ret = maxValPos - minValPos;
+		ret = ret < 0 ? ret + DEG_PER_ROT : ret;
+		return ret;
+	}
+
+	/**
+	 * Determines whether knob is directionally clockwise
+	 * @return  boolean value indicating whether knob value directionality. If it 
+	 * 		is true, the value of a knob handle will increase as it moves clockwise
+	 * 		from the minValPos, otherwise it will increase as it moves counterclockwise.
+	 */
+	public boolean isCwDirection() {
+		return cwDirection;
+	}
+
+	/**
+	 * Sets whether knob is directionally clockwise. See return note
+	 * for {@link #isCwDirection()} for more details.
+	 * @param cwDirection boolean value indicating clockwise direction
+	 */
+	public void setCwDirection(boolean cwDirection) {
+		this.cwDirection = cwDirection;
 	}
 }
